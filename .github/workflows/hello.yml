@@ -22,3 +22,6 @@ jobs:
 
             - name: Lister les fichiers du repo
               run: ls -la
+
+            - name: Afficher la date et l'heure
+              run: date
