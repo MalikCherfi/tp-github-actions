@@ -18,7 +18,7 @@ def test_index_status(client):
     response = client.get("/")
     assert response.status_code == 200
     data = response.get_json()
-    assert data["status"] == "not ok"
+    assert data["status"] == "ok"
     assert data["service"] == "NexaCloud API"
 
 
