@@ -27,3 +27,9 @@ jobs:
 
       - name: Run tests
         run: pytest ressources/ -v
+
+      - name: Install flake8
+        run: pip install flake8
+
+      - name: Lint with flake8
+        run: flake8 ressources/ --config ressources/.flake8
