@@ -40,5 +40,21 @@ jobs:
       - name: Installer les dépendances
         run: pip install -r ressources/requirements.txt
 
-      - name: Lancer les tests
-        run: pytest ressources/ -v
+      - name: Tests with coverage
+        run: pytest ressources/ -v --cov=ressources --cov-report=term-missing
+
+      - name: Generate the HTML report
+        run: pytest ressources/ --cov=ressources --cov-report=html
+
+      - name: Upload the report
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport-couverture
+          path: htmlcov/
+
+      # Mettre en cache les dépendances pip (accélère les builds suivants)
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('ressources/requirements.txt') }}
