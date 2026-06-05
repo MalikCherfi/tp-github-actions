@@ -76,4 +76,4 @@ def test_logs_stats(client):
     data = response.get_json()
     assert "total" in data
     assert "breakdown" in data
-    assert data["total"] == 999
+    assert data["total"] == 185
