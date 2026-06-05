@@ -45,5 +45,11 @@ def logs_error():
     return jsonify({"error_count": seuil, "alerte": alerte})
 
 
+@app.route("/logs/stats")
+def logs_stats():
+    total = sum(LOG_SUMMARY.values())
+    return jsonify({"total": total, "breakdown": LOG_SUMMARY})
+
+
 if __name__ == "__main__":
     app.run(debug=True, port=5001)
