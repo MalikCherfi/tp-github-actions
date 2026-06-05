@@ -1,0 +1,23 @@
+name: Matrix CI
+
+on: [push]
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+
+        strategy:
+            matrix:
+                python-version: ["3.10", "3.11", "3.12"]
+            fail-fast: false
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Python ${{ matrix.python-version }}
+              uses: actions/setup-python@v5
+              with:
+                  python-version: ${{ matrix.python-version }}
+
+            - run: pip install -r ressources/requirements.txt
+            - run: pytest ressources/ -v
