@@ -1519,6 +1519,7 @@ Après avoir activé "Require status checks", GitHub vous demande **quel job** d
 
 **Étape 3 — Vérifier que les règles s'appliquent**
 
+
 ```bash
 # Tentative de push direct sur main → doit être bloqué
 git push origin main
