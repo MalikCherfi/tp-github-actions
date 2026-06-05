@@ -9,6 +9,7 @@ on:
 jobs:
   # ── Job 1 : Qualité ────────────────────────────────────────────────
   qualite:
+    name: Qualité
     runs-on: ubuntu-latest
 
     steps:
@@ -28,6 +29,7 @@ jobs:
 
   # ── Job 2 : Staging ───────────────────────────────────────────────
   staging:
+    name: Staging
     runs-on: ubuntu-latest
     needs: qualite
     environment: staging
@@ -42,6 +44,7 @@ jobs:
 
   # ── Job 3 : Production ────────────────────────────────────────────
   production:
+    name: Production
     runs-on: ubuntu-latest
     needs: staging
     environment: production
