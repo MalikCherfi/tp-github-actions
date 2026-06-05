@@ -8,6 +8,7 @@ on:
 
 jobs:
   pre-commit:
+    name: Pre-commit
     runs-on: ubuntu-latest
 
     steps:
@@ -18,6 +19,7 @@ jobs:
         uses: pre-commit/action@v3.0.1
 
   lint:
+    name: Lint
     runs-on: ubuntu-latest
 
     steps:
@@ -36,6 +38,7 @@ jobs:
         run: flake8 ressources/ --config ressources/.flake8
 
   test:
+    name: Test
     runs-on: ubuntu-latest
 
     steps:
