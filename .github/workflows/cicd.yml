@@ -38,9 +38,19 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Deploy Staging on Azure App Service
-        run: |
-          echo "Deploying staging to Azure App Service..."
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installer les dépendances
+        run: pip install -r ressources/requirements.txt
+
+      - name: Déployer sur Azure App Service (staging)
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: "nexacloud-api-staging"
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_STAGING }}
+          package: ressources/
 
   # ── Job 3 : Production ────────────────────────────────────────────
   production:
@@ -53,6 +63,16 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Deploy Production on Azure App Service
-        run: |
-          echo "Deploying production to Azure App Service..."
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installer les dépendances
+        run: pip install -r ressources/requirements.txt
+
+      - name: Déployer sur Azure App Service (production)
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: "nexacloud-api-production"
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ressources/
