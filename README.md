@@ -1,3 +1,5 @@
+![CI](https://github.com/MalikCherfi/tp-github-actions/actions/workflows/ci.yml/badge.svg)
+
 # TP GitHub Actions — CI/CD et automatisation
 
 **Durée estimée :** 6h
