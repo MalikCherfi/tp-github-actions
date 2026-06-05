@@ -25,3 +25,6 @@ jobs:
 
       - name: Afficher la date et l'heure
         run: date
+
+      - name: Afficher la version de Python
+        run: python --version

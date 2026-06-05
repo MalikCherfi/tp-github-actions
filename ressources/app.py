@@ -38,5 +38,12 @@ def logs_critical():
     return jsonify({"critical_count": seuil, "alerte": alerte})
 
 
+@app.route("/logs/error")
+def logs_error():
+    seuil = LOG_SUMMARY["error"]
+    alerte = seuil > 0
+    return jsonify({"error_count": seuil, "alerte": alerte})
+
+
 if __name__ == "__main__":
     app.run(debug=True, port=5001)

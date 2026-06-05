@@ -57,3 +57,13 @@ def test_logs_critical_alerte(client):
     assert "critical_count" in data
     assert "alerte" in data
     assert data["alerte"] is True
+
+
+def test_logs_error_alerte(client):
+    """L'alerte est active quand il y a des erreurs."""
+    response = client.get("/logs/error")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert "error_count" in data
+    assert "alerte" in data
+    assert data["alerte"] is True
