@@ -1,0 +1,15 @@
+name: Lint réutilisables
+
+on:
+    workflow_call:
+
+jobs:
+    lint:
+        name: Lint
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - run: pip install -r ressources/requirements.txt
+            - run: flake8 ressources/ --config ressources/.flake8
