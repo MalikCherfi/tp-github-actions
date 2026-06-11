@@ -9,7 +9,7 @@ app = Flask(__name__)
 
 # Simule un résumé de logs issu du TP Bash / PowerShell
 LOG_SUMMARY = {
-    "info": 142,
+    "info": 150,
     "warning": 28,
     "error": 12,
     "critical": 3,
