@@ -1,23 +1,23 @@
 name: Deploy
 
 on:
-    workflow_dispatch:
-        inputs:
-            environment:
-                description: "Choose the deployment environment"
-                required: true
-                default: "staging"
-                type: choice
-                options:
-                    - staging
-                    - production
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Choose the deployment environment"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
 
 jobs:
-    deploy:
-        name: Deploy
-        runs-on: ubuntu-latest
-        environment: ${{ inputs.environment }}
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
 
-        steps:
-            - name: "Déployer en ${{ inputs.environment }}"
-              run: echo "Déploiement en ${{ inputs.environment }}..."
+    steps:
+      - name: "Déployer en ${{ inputs.environment }}"
+        run: echo "Déploiement en ${{ inputs.environment }}..."
