@@ -11,7 +11,11 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
-            - uses: actions/checkout@v4
+            - name: Cache node_modules
+              uses: actions/cache@v4
+              with:
+                  path: ressources-node/node_modules
+                  key: ${{ runner.os }}-node-${{ hashFiles('ressources-node/package-lock.json') }}
 
             - name: Setup Node
               uses: actions/setup-node@v4
@@ -32,7 +36,11 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
-            - uses: actions/checkout@v4
+            - name: Cache node_modules
+              uses: actions/cache@v4
+              with:
+                  path: ressources-node/node_modules
+                  key: ${{ runner.os }}-node-${{ hashFiles('ressources-node/package-lock.json') }}
 
             - name: Setup Node
               uses: actions/setup-node@v4
@@ -48,3 +56,14 @@ jobs:
             - name: "Tests avec couverture"
               run: npm test
               working-directory: ressources-node
+
+              # Uploader le rapport de couverture Jest comme artefact
+            - name: Générer le rapport de couverture
+              run: npm test -- --coverage --coverageReporters=html
+              working-directory: ressources-node
+
+            - name: Upload du rapport
+              uses: actions/upload-artifact@v4
+              with:
+                  name: rapport-couverture-node
+                  path: ressources-node/coverage/
