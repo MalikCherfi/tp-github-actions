@@ -6,44 +6,30 @@ on:
   pull_request:
     branches: [main]
 
+# ── Job 1 : Qualité ───────────────────────────────────────────────
 jobs:
-  # ── Job 1 : Qualité ────────────────────────────────────────────────
-  qualite:
-    name: Qualité
-    runs-on: ubuntu-latest
+  lint:
+    uses: ./.github/workflows/reusable-lint.yml
 
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.11"
-
-      - run: pip install -r ressources/requirements.txt
-
-      - name: Lint
-        run: flake8 ressources/ --config ressources/.flake8
-
-      - name: Tests
-        run: pytest ressources/ -v --cov=ressources
+  tests:
+    uses: ./.github/workflows/reusable-tests.yml
+    with:
+      python-version: "3.11"
 
   # ── Job 2 : Staging ───────────────────────────────────────────────
   staging:
     name: Staging
     runs-on: ubuntu-latest
-    needs: qualite
+    needs: [lint, tests]
     environment: staging
     if: github.ref_name == 'main'
 
     steps:
-      - uses: actions/checkout@v6
+      - name: Installer les dépendances
+        uses: ./.github/workflows/reusable-tests.yml
 
-      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: Installer les dépendances
-        run: pip install -r ressources/requirements.txt
 
       - name: Déployer sur Azure App Service (staging)
         uses: azure/webapps-deploy@v3
@@ -61,14 +47,11 @@ jobs:
     if: github.ref_name == 'main'
 
     steps:
-      - uses: actions/checkout@v6
+      - name: Installer les dépendances
+        uses: ./.github/workflows/reusable-tests.yml
 
-      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: Installer les dépendances
-        run: pip install -r ressources/requirements.txt
 
       - name: Déployer sur Azure App Service (production)
         uses: azure/webapps-deploy@v3
