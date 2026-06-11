@@ -1,0 +1,23 @@
+name: Tests réutilisables
+
+on:
+    workflow_call:
+        inputs:
+            python-version:
+                required: true
+                type: string
+
+jobs:
+    tests:
+        name: Tests
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-python@v5
+              with:
+                  python-version: ${{ inputs.python-version }}
+
+            - run: pip install -r ressources/requirements.txt
+            - run: pytest ressources/ -v
