@@ -37,7 +37,7 @@ jobs:
       - name: Déployer sur Azure App Service (staging)
         uses: azure/webapps-deploy@v3
         with:
-          app-name: "nexacloud-api-staging-23043"
+          app-name: "nexacloud-api-staging"
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_STAGING }}
           package: ressources/
 
@@ -62,6 +62,6 @@ jobs:
       - name: Déployer sur Azure App Service (production)
         uses: azure/webapps-deploy@v3
         with:
-          app-name: "nexacloud-api-23043"
+          app-name: "nexacloud-api-production"
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: ressources/
