@@ -38,6 +38,7 @@ module.exports = app;
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
+    // eslint-disable-next-line no-console
     console.log(`NexaCloud API démarrée sur http://localhost:${PORT}`);
   });
 }
