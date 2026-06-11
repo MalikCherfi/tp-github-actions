@@ -1,11 +1,11 @@
 # Par défaut : tout changement requiert une review de ces personnes
-*                          @MalikCherfi
+*                          @MalikCherfi @bambstk
 
 # Les workflows CI/CD ne peuvent être modifiés que par le lead DevOps
-.github/workflows/         @MalikCherfi
+.github/workflows/         @MalikCherfi @bambstk
 
 # Le fichier de dépendances requiert une validation technique
-ressources/requirements.txt  @MalikCherfi
+ressources/requirements.txt  @MalikCherfi @bambstk
 
 # Les fichiers de sécurité requièrent une double validation
 .github/dependabot.yml     @MalikCherfi
