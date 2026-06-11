@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Cache node_modules
         uses: actions/cache@v5
         with:
@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Cache node_modules
         uses: actions/cache@v5
         with:
@@ -74,7 +74,7 @@ jobs:
       fail-fast: false # continuer même si une version échoue
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Node ${{ matrix.node-version }}
         uses: actions/setup-node@v4
