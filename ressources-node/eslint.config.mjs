@@ -1,6 +1,9 @@
 import js from "@eslint/js";
 
 export default [
+  {
+    ignores: ["eslint.config.mjs"],
+  },
   js.configs.recommended,
   {
     languageOptions: {
@@ -23,6 +26,22 @@ export default [
       quotes: ["error", "single"],
       indent: ["error", 2],
       "max-len": ["error", { code: 100 }],
+    },
+  },
+  {
+    files: ["**/*.test.js", "**/*.spec.js"],
+    languageOptions: {
+      globals: {
+        describe: "readonly",
+        it: "readonly",
+        test: "readonly",
+        expect: "readonly",
+        beforeEach: "readonly",
+        afterEach: "readonly",
+        beforeAll: "readonly",
+        afterAll: "readonly",
+        jest: "readonly",
+      },
     },
   },
 ];
