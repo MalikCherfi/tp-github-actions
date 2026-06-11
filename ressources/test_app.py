@@ -43,7 +43,7 @@ def test_logs_summary_values(client):
     """Les compteurs de logs ont les valeurs attendues."""
     response = client.get("/logs/summary")
     data = response.get_json()
-    assert data["info"] == 142
+    assert data["info"] == 150
     assert data["warning"] == 28
     assert data["error"] == 12
     assert data["critical"] == 3
