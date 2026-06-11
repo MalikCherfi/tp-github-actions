@@ -25,11 +25,14 @@ jobs:
     if: github.ref_name == 'main'
 
     steps:
-      - name: Installer les dépendances
-        uses: ./.github/workflows/reusable-tests.yml
+      - uses: actions/checkout@v6
 
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - name: Installer les dépendances
+        run: pip install -r ressources/requirements.txt
 
       - name: Déployer sur Azure App Service (staging)
         uses: azure/webapps-deploy@v3
@@ -47,11 +50,14 @@ jobs:
     if: github.ref_name == 'main'
 
     steps:
-      - name: Installer les dépendances
-        uses: ./.github/workflows/reusable-tests.yml
+      - uses: actions/checkout@v6
 
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - name: Installer les dépendances
+        run: pip install -r ressources/requirements.txt
 
       - name: Déployer sur Azure App Service (production)
         uses: azure/webapps-deploy@v3
