@@ -35,6 +35,7 @@ app.get('/logs/critical', (req, res) => {
 
 module.exports = app;
 
+/* istanbul ignore next */
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
