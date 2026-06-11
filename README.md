@@ -1986,19 +1986,907 @@ jobs:
 
 ---
 
-## Grille d'évaluation (20 pts)
+## Variante Node.js / npm
+
+> Cette section reprend exactement la même progression que les étapes 1 à 6, mais avec un projet **Node.js/Express** au lieu de Python/Flask. Elle peut être faite à la place ou en complément.
+>
+> Le dossier `ressources-node/` contient la même API NexaCloud, réécrite en Express.
+
+### Outillage Node : correspondances avec Python
+
+| Python | Node.js |
+|--------|---------|
+| Flask | Express |
+| pytest | Jest + Supertest |
+| flake8 | ESLint |
+| `requirements.txt` | `package.json` |
+| `pip install` | `npm install` |
+| pre-commit (flake8 hook) | Husky + lint-staged |
+
+---
+
+### Mise en place — Installer Node et les dépendances
+
+> ⏱️ Cette section prend environ **10 minutes**.
+
+```bash
+# Vérifier que Node est installé (version 18 minimum recommandée)
+node --version
+npm --version
+
+# Aller dans le dossier Node
+cd ressources-node
+
+# Installer les dépendances
+npm install
+
+# Lancer les tests pour vérifier que tout fonctionne
+npm test
+
+# Lancer le lint
+npm run lint
+```
+
+Résultat attendu : **4 tests passent** (un par route), lint sans erreur.
+
+---
+
+### Étape N1 — Pipeline CI Node (lint + tests) (1h)
+
+> 🎯 **Pourquoi on fait ça ?**
+> En Python on utilisait `pip install` dans la CI — en Node l'équivalent est `npm ci`. La différence n'est pas anodine : `npm install` peut résoudre de nouvelles versions à la volée, `npm ci` installe **exactement** ce qui est verrouillé dans `package-lock.json`. En CI, on veut de la reproductibilité, pas des surprises. Cette étape vous fait construire un pipeline Node avec les deux outils phares de l'écosystème : **ESLint** (lint) et **Jest** (tests), en deux jobs parallèles exactement comme pour Python.
+
+### Concept — ESLint et Jest
+
+**ESLint** est l'équivalent de flake8 pour JavaScript. Il vérifie le style et détecte les erreurs courantes sans exécuter le code :
+
+```js
+// Exemple de code qui passe les tests mais ÉCHOUE au lint
+const unused = 'test'        // ← ESLint : no-unused-vars (error)
+const x=1                    // ← ESLint : no space around = (error)
+var ancien = true            // ← ESLint : prefer const (warn)
+```
+
+**Jest** est le framework de tests Node. **Supertest** permet d'appeler les routes Express dans les tests sans démarrer de vrai serveur :
+
+```js
+// Un test Jest avec Supertest
+it('répond 200', async () => {
+  const res = await request(app).get('/health');
+  expect(res.statusCode).toBe(200);
+  expect(res.body.status).toBe('healthy');
+});
+```
+
+**`npm ci` vs `npm install` dans la CI :**
+
+| | `npm install` | `npm ci` |
+|---|---|---|
+| Résout les versions | Oui (peut upgrader) | Non (respecte `package-lock.json`) |
+| Reproductible | ❌ | ✅ |
+| Vitesse en CI | Moyen | Rapide |
+| Usage recommandé | Dev local | CI/CD |
+
+---
+
+### Exercice N1.1 — Créer le pipeline CI Node
+
+Créez `.github/workflows/ci-node.yml` :
+
+```yaml
+name: CI — NexaCloud API (Node)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: ressources-node/package-lock.json
+
+      # TODO: ajouter un step "Installer les dépendances"
+      # commande : npm ci (dans working-directory: ressources-node)
+
+      # TODO: ajouter un step "Lint avec ESLint"
+      # commande : npm run lint (dans working-directory: ressources-node)
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: ressources-node/package-lock.json
+
+      # TODO: ajouter les steps pour installer et lancer les tests
+```
+
+Pushez et observez les deux jobs tourner en parallèle dans l'onglet Actions.
+
+> ✏️ **À vous**
+>
+> 1. Introduisez une variable non utilisée dans `ressources-node/app.js` (ex : `const unused = 'test';`). Commitez et pushez. Quel job échoue ? Que dit le message d'erreur ?
+> 2. Corrigez l'erreur, pushez à nouveau.
+> 3. Modifiez un `expect` dans `app.test.js` pour qu'il soit faux. Quel job échoue cette fois ?
+
+<details>
+<summary>✅ Correction</summary>
+
+```yaml
+name: CI — NexaCloud API (Node)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: ressources-node/package-lock.json
+
+      - name: Installer les dépendances
+        run: npm ci
+        working-directory: ressources-node
+
+      - name: Lint avec ESLint
+        run: npm run lint
+        working-directory: ressources-node
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: ressources-node/package-lock.json
+
+      - name: Installer les dépendances
+        run: npm ci
+        working-directory: ressources-node
+
+      - name: Tests avec couverture
+        run: npm test
+        working-directory: ressources-node
+```
+
+**Erreur ESLint typique dans les logs :**
+```
+/home/runner/work/.../app.js
+  7:7  error  'unused' is defined but never used  no-unused-vars
+✖ 1 problem (1 error, 0 warnings)
+```
+
+**Erreur Jest typique dans les logs :**
+```
+● GET /health › retourne le statut healthy
+
+  expect(received).toBe(expected)
+  Expected: "broken"
+  Received: "ok"
+```
+
+Le comportement est identique à la CI Python : les deux jobs tournent en parallèle, chacun peut échouer indépendamment.
+
+</details>
+
+### Pour aller plus loin — Étape N1
+
+<details>
+<summary>💡 Voir les pistes d'approfondissement</summary>
+
+```yaml
+# Uploader le rapport de couverture Jest comme artefact
+- name: Générer le rapport de couverture
+  run: npm test -- --coverage --coverageReporters=html
+  working-directory: ressources-node
+
+- name: Upload du rapport
+  uses: actions/upload-artifact@v4
+  with:
+    name: rapport-couverture-node
+    path: ressources-node/coverage/
+
+# Mettre en cache node_modules (plus agressif que le cache npm)
+- name: Cache node_modules
+  uses: actions/cache@v4
+  with:
+    path: ressources-node/node_modules
+    key: ${{ runner.os }}-node-${{ hashFiles('ressources-node/package-lock.json') }}
+```
+
+</details>
+
+---
+
+### Étape N2 — Matrix build Node (versions multiples) (30 min)
+
+> 🎯 **Pourquoi on fait ça ?**
+> Une API Node déployée en production tourne sur une version précise de Node. Mais vos collègues ont peut-être Node 18 sur leur machine, le runner CI utilise Node 20, et Azure App Service supporte Node 22. Un code qui fonctionne sur une version peut silencieusement casser sur une autre — à cause de changements dans les APIs natives, de comportements légèrement différents, ou de dépendances qui n'ont pas été testées. Le matrix build lance le même pipeline en parallèle sur plusieurs versions Node : c'est votre filet de sécurité de compatibilité.
+
+### Exercice N2.1 — Tester sur Node 18, 20 et 22
+
+Ajoutez un job `test-matrix` dans `ci-node.yml` :
+
+```yaml
+  # TODO: créer un job test-matrix avec strategy.matrix sur node-version: ["18", "20", "22"]
+  # et fail-fast: false
+  # Les steps sont identiques au job test existant,
+  # sauf que node-version utilise ${{ matrix.node-version }}
+```
+
+<details>
+<summary>✅ Correction</summary>
+
+```yaml
+  test-matrix:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ["18", "20", "22"]
+      fail-fast: false    # continuer même si une version échoue
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Installer les dépendances
+        run: npm ci
+        working-directory: ressources-node
+
+      - name: Tests Node ${{ matrix.node-version }}
+        run: npm test
+        working-directory: ressources-node
+```
+
+GitHub lance **3 jobs en parallèle**. Dans l'onglet Actions vous voyez :
+```
+test-matrix (18) ✅
+test-matrix (20) ✅
+test-matrix (22) ✅
+```
+
+Équivalent exact du matrix build Python avec `python-version: ["3.10", "3.11", "3.12"]`.
+
+</details>
+
+### Pour aller plus loin — Étape N2
+
+<details>
+<summary>💡 Voir les pistes d'approfondissement</summary>
+
+```yaml
+# Tester sur plusieurs OS en plus des versions Node
+strategy:
+  matrix:
+    node-version: ["18", "20"]
+    os: [ubuntu-latest, windows-latest]
+
+runs-on: ${{ matrix.os }}
+# → 4 combinaisons (2 versions × 2 OS)
+# Utile si votre app doit tourner sur Windows Server (Azure Windows App Service)
+```
+
+</details>
+
+---
+
+### Étape N3 — Dependabot pour npm (30 min)
+
+> 🎯 **Pourquoi on fait ça ?**
+> Le fichier `package.json` liste vos dépendances avec des versions précises — mais ces versions vieillissent. Une dépendance non mise à jour pendant 6 mois peut exposer des CVE connues, ou créer des incompatibilités avec d'autres packages. Sans automatisation, personne ne surveille ça. Dependabot surveille `package.json` et `package-lock.json`, et ouvre des PRs de mise à jour automatiquement. La différence avec Python : npm a deux niveaux de dépendances (`dependencies` et `devDependencies`) et un fichier de lock plus complexe — Dependabot gère les deux.
+
+### Exercice N3.1 — Ajouter le suivi npm dans Dependabot
+
+Ouvrez `.github/dependabot.yml` (celui que vous avez créé à l'étape 6.1) et ajoutez ce bloc à la suite de la config pip :
+
+```yaml
+  # TODO: ajouter un bloc package-ecosystem: "npm"
+  # directory: "/ressources-node"
+  # schedule weekly
+  # labels: dependencies + node
+  # open-pull-requests-limit: 5
+```
+
+> ✏️ **À vous**
+>
+> Les versions dans `package.json` sont volontairement légèrement en retard. Dependabot devrait ouvrir des PRs dans les jours suivant l'activation. Regardez le diff d'une PR Dependabot npm : quels fichiers sont modifiés ? Pourquoi `package-lock.json` change-t-il aussi ?
+
+<details>
+<summary>✅ Correction</summary>
+
+```yaml
+  # ── Mettre à jour les dépendances npm ─────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/ressources-node"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "node"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore"
+```
+
+**Ce que Dependabot modifie dans une PR npm :**
+- `package.json` : la version de la dépendance (ex : `"express": "4.18.2"` → `"express": "4.19.2"`)
+- `package-lock.json` : le graph complet des dépendances transitives recalculé
+
+**Pourquoi `package-lock.json` change ?** Parce qu'Express lui-même dépend d'autres packages. Une mise à jour d'Express peut tirer des nouvelles versions de `body-parser`, `path-to-regexp`, etc. — tout ça est recalculé et verrouillé dans le lock file.
+
+**En équipe :** la PR Dependabot passe en CI comme n'importe quelle autre PR. Si Jest + ESLint sont verts, on merge. Si une mise à jour casse les tests, on le voit immédiatement — avant que ça arrive en production.
+
+</details>
+
+### Pour aller plus loin — Étape N3
+
+<details>
+<summary>💡 Voir les pistes d'approfondissement</summary>
+
+```yaml
+# Ignorer les mises à jour majeures (breaking changes) sur certains packages
+  - package-ecosystem: "npm"
+    directory: "/ressources-node"
+    schedule:
+      interval: "weekly"
+    ignore:
+      - dependency-name: "express"
+        update-types: ["version-update:semver-major"]
+    # Dependabot proposera les mises à jour mineures et patches d'Express,
+    # mais ignorera les versions majeures (ex: Express 4 → Express 5)
+    # qui nécessitent une migration manuelle
+```
+
+</details>
+
+---
+
+### Étape N4 — Hooks locaux avec Husky + lint-staged (45 min)
+
+> 🎯 **Pourquoi on fait ça ?**
+> En Python vous avez utilisé `pre-commit` pour bloquer les commits avec des erreurs de style avant qu'elles n'arrivent dans la CI. En Node l'écosystème utilise deux outils complémentaires : **Husky** gère les hooks Git (comme `pre-commit` le fait), et **lint-staged** n'exécute le lint que sur les fichiers modifiés par le commit en cours — pas sur l'ensemble du projet. C'est crucial sur un grand codebase : linter 500 fichiers à chaque commit serait trop lent. lint-staged cible exactement les fichiers touchés.
+
+### Concept — Husky et lint-staged
+
+```
+git commit
+     │
+     ▼
+Hook pre-commit (Husky)
+     │
+     ▼
+lint-staged ──► ESLint --fix sur les fichiers .js modifiés
+                Jest --findRelatedTests sur les tests liés
+     │
+  ❌ erreur → commit bloqué
+  ✅ ok     → commit créé
+```
+
+**La différence avec `pre-commit` Python :**
+
+| | `pre-commit` (Python) | Husky + lint-staged (Node) |
+|---|---|---|
+| Config | `.pre-commit-config.yaml` | `package.json` + `.husky/` |
+| Scope | Tous les fichiers | Fichiers modifiés seulement |
+| Auto-fix | Selon le hook | `eslint --fix` intégré |
+| Installation | `pre-commit install` | `npx husky init` |
+
+---
+
+### Exercice N4.1 — Installer et configurer Husky
+
+```bash
+cd ressources-node
+
+# Installer les outils
+npm install --save-dev husky lint-staged
+
+# Initialiser Husky (crée .husky/ et ajoute le script prepare dans package.json)
+npx husky init
+```
+
+Créez/remplacez `.husky/pre-commit` avec ce contenu :
+
+```bash
+#!/bin/sh
+cd ressources-node
+npx lint-staged
+```
+
+Ajoutez la clé `lint-staged` dans `package.json` :
+
+```json
+{
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "jest --bail --findRelatedTests --passWithNoTests"
+    ]
+  }
+}
+```
+
+```bash
+# Rendre le hook exécutable
+chmod +x .husky/pre-commit
+
+# Tester sur tous les fichiers
+npx lint-staged
+```
+
+> ✏️ **À vous**
+>
+> Introduisez un espace manquant à la fin d'une ligne dans `app.js`, puis tentez un `git commit`. Observez ESLint corriger automatiquement le fichier (grâce à `--fix`) et le commit réussir après la correction. C'est différent de `pre-commit` Python qui bloque et demande de corriger manuellement.
+
+<details>
+<summary>✅ Correction — package.json complet avec lint-staged</summary>
+
+```json
+{
+  "name": "nexacloud-api",
+  "version": "1.1.0",
+  "scripts": {
+    "start": "node app.js",
+    "test": "jest --coverage",
+    "lint": "eslint . --ext .js",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "express": "4.18.2"
+  },
+  "devDependencies": {
+    "eslint": "8.44.0",
+    "husky": "9.0.11",
+    "jest": "29.5.0",
+    "lint-staged": "15.2.2",
+    "supertest": "6.3.3"
+  },
+  "jest": {
+    "testEnvironment": "node"
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "jest --bail --findRelatedTests --passWithNoTests"
+    ]
+  }
+}
+```
+
+**Ce qui se passe lors d'un commit :**
+1. Husky déclenche le hook `pre-commit`
+2. lint-staged identifie les fichiers `.js` modifiés (ex : `app.js`)
+3. `eslint --fix` corrige automatiquement les problèmes de style (espaces, quotes…)
+4. `jest --findRelatedTests` lance uniquement les tests qui importent `app.js`
+5. Si Jest échoue → commit bloqué. Si tout passe → commit créé.
+
+**Avantage sur Python :** `eslint --fix` corrige les erreurs de style automatiquement — vous n'avez pas besoin de corriger manuellement avant de re-commiter.
+
+</details>
+
+### Pour aller plus loin — Étape N4
+
+<details>
+<summary>💡 Voir les pistes d'approfondissement</summary>
+
+```bash
+# Ajouter un hook pre-push pour lancer tous les tests (pas seulement les tests liés)
+# .husky/pre-push
+#!/bin/sh
+cd ressources-node
+echo "[pre-push] Lancement de tous les tests..."
+npm test
+```
+
+```json
+// Étendre lint-staged à d'autres types de fichiers
+"lint-staged": {
+  "*.js": ["eslint --fix", "jest --bail --findRelatedTests --passWithNoTests"],
+  "*.json": ["prettier --write"],
+  "*.md": ["prettier --write"]
+}
+```
+
+</details>
+
+---
+
+### Étape N5 — Pipeline CI/CD Node complet vers Azure (1h30)
+
+> 🎯 **Pourquoi on fait ça ?**
+> Vous avez un pipeline CI qui vérifie le code — mais il ne déploie rien. Le CD (Continuous Deployment) enchaîne automatiquement : code validé → déploiement en staging → approbation → déploiement en production. Pour Node.js sur Azure App Service, la mécanique est identique à Python : même action `azure/webapps-deploy@v3`, même séquence staging → production avec environnements protégés. Seule différence : le runtime Azure passe de `PYTHON:3.11` à `NODE:20-lts`, et la commande de démarrage est `node app.js` au lieu de `gunicorn`.
+
+### Concept — Démarrage d'une app Node sur Azure
+
+Azure App Service Node démarre l'app avec la commande définie dans `package.json` :
+
+```json
+"scripts": {
+  "start": "node app.js"   // ← Azure exécute npm start
+}
+```
+
+Le pipeline complet reste identique à Python :
+
+```
+git push
+    │
+    ▼
+┌──────────┐  ✅  ┌─────────┐  ✅ approuvé  ┌────────────┐
+│  qualité │ ───► │ staging │ ────────────► │ production │
+└──────────┘      └─────────┘               └────────────┘
+```
+
+---
+
+### Exercice N5.1 — Créer l'App Service Node sur Azure
+
+> Si vous n'avez pas d'accès Azure actif, passez directement à l'exercice N5.2 et simulez le déploiement avec un `run: echo`.
+
+```bash
+APP_NAME="nexacloud-node-$RANDOM"
+RESOURCE_GROUP="rg-nexacloud-tp"
+
+# Créer l'App Service Node (le plan existe déjà depuis l'étape 4)
+az webapp create \
+    --name "$APP_NAME" \
+    --resource-group "$RESOURCE_GROUP" \
+    --plan "plan-nexacloud" \
+    --runtime "NODE:20-lts"
+
+# Récupérer le publish profile
+az webapp deployment list-publishing-profiles \
+    --name "$APP_NAME" \
+    --resource-group "$RESOURCE_GROUP" \
+    --xml
+```
+
+Créez un secret GitHub `AZURE_WEBAPP_PUBLISH_PROFILE_NODE` avec la sortie XML.
+
+> ⚠️ Pensez à activer l'authentification basique comme à l'étape 4 : **App Service → Settings → Configuration → General settings → SCM Basic Auth Publishing Credentials → On → Save**
+
+---
+
+### Exercice N5.2 — Pipeline CI/CD complet Node
+
+Créez `.github/workflows/cicd-node.yml` :
+
+```yaml
+name: CI/CD — NexaCloud API (Node)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  qualite:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: ressources-node/package-lock.json
+
+      - name: Installer les dépendances
+        run: npm ci
+        working-directory: ressources-node
+
+      - name: Lint
+        run: npm run lint
+        working-directory: ressources-node
+
+      - name: Tests avec couverture
+        run: npm test
+        working-directory: ressources-node
+
+  staging:
+    runs-on: ubuntu-latest
+    needs: qualite
+    environment: staging
+    if: github.ref_name == 'main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # TODO: ajouter le step de déploiement azure/webapps-deploy@v3
+      # app-name: "nexacloud-node-staging"
+      # publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_NODE_STAGING }}
+      # package: ressources-node/
+
+  production:
+    runs-on: ubuntu-latest
+    needs: staging
+    environment: production
+    if: github.ref_name == 'main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # TODO: même chose pour la production
+```
+
+<details>
+<summary>✅ Correction</summary>
+
+```yaml
+name: CI/CD — NexaCloud API (Node)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  qualite:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: ressources-node/package-lock.json
+
+      - name: Installer les dépendances
+        run: npm ci
+        working-directory: ressources-node
+
+      - name: Lint
+        run: npm run lint
+        working-directory: ressources-node
+
+      - name: Tests avec couverture
+        run: npm test
+        working-directory: ressources-node
+
+  staging:
+    runs-on: ubuntu-latest
+    needs: qualite
+    environment: staging
+    if: github.ref_name == 'main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Déployer sur Azure App Service (staging)
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: "nexacloud-node-staging"
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_NODE_STAGING }}
+          package: ressources-node/
+
+  production:
+    runs-on: ubuntu-latest
+    needs: staging
+    environment: production
+    if: github.ref_name == 'main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Déployer sur Azure App Service (production)
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: "nexacloud-node"
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_NODE }}
+          package: ressources-node/
+```
+
+**Ce qui change par rapport au pipeline Python :**
+- `actions/setup-python@v5` → `actions/setup-node@v4`
+- `pip install -r requirements.txt` → `npm ci`
+- `flake8` → `npm run lint` (ESLint)
+- `pytest` → `npm test` (Jest)
+- Le runtime Azure : `PYTHON:3.11` → `NODE:20-lts`
+- La commande de démarrage : `gunicorn` → `npm start`
+
+La structure du pipeline (3 jobs chainés, environments protégés, `needs:`) est identique.
+
+</details>
+
+### Pour aller plus loin — Étape N5
+
+<details>
+<summary>💡 Voir les pistes d'approfondissement</summary>
+
+```yaml
+# Smoke test post-déploiement Node
+- name: Smoke test
+  run: |
+    sleep 20
+    curl --fail https://nexacloud-node.azurewebsites.net/health || exit 1
+
+# Notification Discord en cas d'échec (identique à Python)
+- name: Notifier Discord
+  if: failure()
+  run: |
+    curl -X POST ${{ secrets.DISCORD_WEBHOOK_URL }} \
+      -H "Content-Type: application/json" \
+      -d '{
+        "embeds": [{
+          "title": "❌ Déploiement Node échoué",
+          "color": 15158332,
+          "fields": [
+            {"name": "Repo", "value": "${{ github.repository }}", "inline": true},
+            {"name": "Branche", "value": "${{ github.ref_name }}", "inline": true}
+          ]
+        }]
+      }'
+```
+
+</details>
+
+---
+
+### Exercice fil rouge Node — Ajouter `/logs/stats`
+
+> 🎯 **Pourquoi on fait ça ?**
+> Même exercice qu'en Python (étape 6.4) — mais en JavaScript. L'objectif est double : pratiquer le flux complet branche → PR → CI → merge avec du code Node, et comparer la syntaxe Express/Jest avec Flask/pytest sur une tâche identique. Voir les deux implémentations côte à côte est l'un des meilleurs moyens de comprendre ce qui est propre à l'outillage et ce qui relève de la logique métier.
+
+**Étape 1 — Créer une branche**
+
+```bash
+git checkout -b feat/node-endpoint-stats
+```
+
+**Étape 2 — Ajouter l'endpoint dans `ressources-node/app.js`**
+
+```js
+// TODO: ajouter la route GET /logs/stats
+// Elle doit retourner { total: <somme de toutes les valeurs>, breakdown: LOG_SUMMARY }
+// Utiliser Object.values() et reduce() pour calculer le total
+```
+
+**Étape 3 — Écrire le test dans `ressources-node/app.test.js`**
+
+```js
+// TODO: ajouter un describe('GET /logs/stats', ...) avec un test qui vérifie :
+// - statusCode 200
+// - body.total === 185  (142 + 28 + 12 + 3)
+// - body.breakdown.critical === 3
+```
+
+**Étape 4 — Vérifier en local**
+
+```bash
+cd ressources-node
+npm test       # tous les tests doivent passer, dont le nouveau
+npm run lint   # aucune erreur de lint
+```
+
+**Étape 5 — Commiter, pusher, ouvrir la PR**
+
+```bash
+git add ressources-node/app.js ressources-node/app.test.js
+git commit -m "feat: ajouter endpoint /logs/stats (Node)"
+git push origin feat/node-endpoint-stats
+```
+
+Ouvrez la PR sur GitHub et observez la CI se déclencher.
+
+<details>
+<summary>✅ Correction</summary>
+
+**`ressources-node/app.js`** — route à ajouter avant `module.exports` :
+
+```js
+app.get('/logs/stats', (req, res) => {
+  const total = Object.values(LOG_SUMMARY).reduce((a, b) => a + b, 0);
+  res.json({ total, breakdown: LOG_SUMMARY });
+});
+```
+
+**`ressources-node/app.test.js`** — test à ajouter :
+
+```js
+describe('GET /logs/stats', () => {
+  it('retourne le total et le détail', async () => {
+    const res = await request(app).get('/logs/stats');
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('total', 185);   // 142 + 28 + 12 + 3
+    expect(res.body).toHaveProperty('breakdown');
+    expect(res.body.breakdown.critical).toBe(3);
+  });
+});
+```
+
+**Résultat des tests :**
+```
+ PASS  app.test.js
+  GET /
+    ✓ répond 200 avec le bon service
+  GET /health
+    ✓ retourne le statut healthy
+  GET /logs/summary
+    ✓ retourne les 4 niveaux de log
+  GET /logs/critical
+    ✓ détecte une alerte critique
+  GET /logs/stats
+    ✓ retourne le total et le détail    ← nouveau
+
+Test Suites: 1 passed
+Tests:       5 passed
+```
+
+**Comparaison Python ↔ Node sur cet endpoint :**
+
+```python
+# Python / Flask
+@app.route("/logs/stats")
+def logs_stats():
+    total = sum(LOG_SUMMARY.values())
+    return jsonify({"total": total, "breakdown": LOG_SUMMARY})
+```
+
+```js
+// Node / Express
+app.get('/logs/stats', (req, res) => {
+  const total = Object.values(LOG_SUMMARY).reduce((a, b) => a + b, 0);
+  res.json({ total, breakdown: LOG_SUMMARY });
+});
+```
+
+La logique métier est identique. Seule la syntaxe change.
+
+</details>
+
+---
+
+### Grille d'évaluation — Variante Node (10 pts bonus)
 
 | Critère | Points |
 |---------|--------|
-| Étape 1 : workflow `hello.yml` fonctionnel avec les 4 infos contexte + date | 2 |
-| Étape 2 : pipeline CI avec lint flake8 + tests pytest en deux jobs parallèles | 4 |
-| Étape 3 : secret utilisé correctement, environnements staging/production créés | 3 |
-| Étape 4 : pipeline CI/CD complet avec les 3 jobs chainés | 4 |
-| Étape 5 : `.pre-commit-config.yaml` fonctionnel + hook pre-push | 3 |
-| Étape 6 : Dependabot + CODEOWNERS + branch protection avec status check obligatoire | 2 |
-| Étape 6.4 : endpoint `/logs/stats` avec test → PR → CI verte → merge | 2 |
-| Étape 6.5 : binôme ajouté comme collaborateur + review croisée approuvée | 2 |
-| BONUS : matrix build ou workflow réutilisable | 2 |
+| CI Node avec lint ESLint + tests Jest en deux jobs parallèles | 3 |
+| Dependabot npm configuré dans `dependabot.yml` | 1 |
+| Pipeline CI/CD Node complet (qualité → staging → production) | 3 |
+| Hooks Husky + lint-staged fonctionnels | 2 |
+| Endpoint `/logs/stats` Node avec test → PR → CI verte → merge | 1 |
 
 ---
 
