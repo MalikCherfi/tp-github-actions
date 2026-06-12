@@ -33,6 +33,11 @@ app.get('/logs/critical', (req, res) => {
   res.json({ critical_count: seuil, alerte: seuil > 0 });
 });
 
+app.get('/logs/stats', (req, res) => {
+  const count = Object.values(LOG_SUMMARY).reduce((a, b) => a + b, 0);
+  res.json({ count });
+});
+
 module.exports = app;
 
 /* istanbul ignore next */
