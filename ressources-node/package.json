@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node app.js",
     "test": "jest --coverage",
-    "lint": "eslint . --ext .js"
+    "lint": "eslint . --ext .js",
+    "prepare": "husky"
   },
   "dependencies": {
     "express": "4.22.2"
@@ -14,10 +15,17 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "10.4.1",
+    "husky": "^9.1.7",
     "jest": "30.4.2",
+    "lint-staged": "^17.0.7",
     "supertest": "7.2.2"
   },
   "jest": {
     "testEnvironment": "node"
+  },
+  "lint-staged": {
+    "*.js": ["eslint --fix", "jest --bail --findRelatedTests --passWithNoTests"],
+    "*.json": ["prettier --write"],
+    "*.md": ["prettier --write"]
   }
 }
