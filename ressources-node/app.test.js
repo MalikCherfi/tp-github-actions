@@ -40,4 +40,12 @@ describe('GET /logs/critical', () => {
     expect(res.body.critical_count).toBe(3);
     expect(res.body.alerte).toBe(true);
   });
+
+  describe('GET /logs/stats', () => {
+    it('calcule le nombre total de logs', async () => {
+      const res = await request(app).get('/logs/stats');
+      expect(res.statusCode).toBe(200);
+      expect(res.body.count).toBe(185);
+    });
+  });
 });
