@@ -1,0 +1,6 @@
+#!/bin/sh
+cd ressources-node
+echo "[pre-push] Lancement de lint-staged..."
+npx lint-staged
+echo "[pre-push] Lancement de tous les tests..."
+npm test
