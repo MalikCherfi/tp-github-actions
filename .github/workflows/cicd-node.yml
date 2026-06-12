@@ -1,0 +1,82 @@
+name: CI/CD — NexaCloud API (Node)
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+
+jobs:
+    qualite:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "24"
+                  cache: "npm"
+                  cache-dependency-path: ressources-node/package-lock.json
+
+            - name: Installer les dépendances
+              run: npm ci
+              working-directory: ressources-node
+
+            - name: Lint
+              run: npm run lint
+              working-directory: ressources-node
+
+            - name: Tests avec couverture
+              run: npm test
+              working-directory: ressources-node
+
+    staging:
+        runs-on: ubuntu-latest
+        needs: qualite
+        environment: staging
+        if: github.ref_name == 'main'
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "24"
+
+            - name: Installer les dépendances
+              run: npm ci
+              working-directory: ressources-node
+
+            - name: Déployer sur Azure Web App (Staging)
+              uses: azure/webapps-deploy@v3
+              with:
+                  app-name: "nexacloud-api-node-staging-mc"
+                  publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_STAGING_NODE }}
+                  package: ressources-node/
+
+    production:
+        runs-on: ubuntu-latest
+        needs: staging
+        environment: production
+        if: github.ref_name == 'main'
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "24"
+
+            - name: Installer les dépendances
+              run: npm ci
+              working-directory: ressources-node
+
+            - name: Déployer sur Azure Web App (Production)
+              uses: azure/webapps-deploy@v3
+              with:
+                  app-name: "nexacloud-api-node-production-mc"
+                  publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_NODE }}
+                  package: ressources-node/
