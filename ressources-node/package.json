@@ -10,7 +10,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "express": "4.22.2"
+    "express": "4.22.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
